@@ -41,7 +41,7 @@ jobs:
           powershell -Command "New-Item -ItemType Directory -Force -Path Output; Get-ChildItem -Path . -Filter 'PassportPhotoExtractorSetup*.exe' -Recurse | ForEach-Object { Copy-Item $_ -Destination Output -Force }"
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: PassportPhotoExtractorInstaller-Nuitka
           path: Output/*.exe
