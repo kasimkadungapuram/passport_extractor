@@ -1,0 +1,47 @@
+name: Build Windows EXE (Nuitka + Inno Setup) - advanced
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build-nuitka:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies and Nuitka
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install nuitka
+
+      - name: Install MinGW (for native compile)
+        run: choco install mingw -y
+
+      - name: Build with Nuitka (standalone)
+        run: |
+          mkdir build || exit 0
+          nuitka --standalone --remove-output --output-dir=build --windows-disable-console main.py
+          powershell -Command "New-Item -ItemType Directory -Force -Path dist; Get-ChildItem -Path build -Filter '*.exe' -Recurse | ForEach-Object { Copy-Item $_ -Destination dist -Force }"
+
+      - name: Install Inno Setup
+        run: choco install innosetup -y
+
+      - name: Create installer
+        shell: cmd
+        run: |
+          iscc setup.iss
+          powershell -Command "New-Item -ItemType Directory -Force -Path Output; Get-ChildItem -Path . -Filter 'PassportPhotoExtractorSetup*.exe' -Recurse | ForEach-Object { Copy-Item $_ -Destination Output -Force }"
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: PassportPhotoExtractorInstaller-Nuitka
+          path: Output/*.exe
