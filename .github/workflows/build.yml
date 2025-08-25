@@ -1,23 +1,23 @@
-name: Build Windows EXE
+name: Build EXE
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
 
 jobs:
   build:
     runs-on: windows-latest
 
     steps:
-      - name: Checkout repo
+      - name: Checkout source
         uses: actions/checkout@v3
 
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.11"
+          python-version: '3.11'
 
       - name: Install dependencies
         run: |
@@ -25,11 +25,12 @@ jobs:
           pip install -r requirements.txt
           pip install pyinstaller
 
-      - name: Build EXE
+      - name: Build exe with PyInstaller
         run: |
-          pyinstaller --onefile --noconsole main.py --hidden-import cv2 --hidden-import numpy
+          pyinstaller --onefile main.py
+        shell: cmd
 
-      - name: Upload artifact
+      - name: Upload exe artifact
         uses: actions/upload-artifact@v3
         with:
           name: passport_extractor_exe
