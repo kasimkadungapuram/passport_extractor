@@ -1,4 +1,4 @@
-name: Build Windows EXE (Win7 + Win10/11)
+name: Build Windows EXE
 
 on:
   push:
@@ -9,10 +9,13 @@ on:
 jobs:
   build:
     runs-on: windows-latest
-
     strategy:
       matrix:
-        python-version: [3.7, 3.11]
+        include:
+          - python-version: "3.8"
+            exe-name: "app_win7.exe"
+          - python-version: "3.11"
+            exe-name: "app_win10.exe"
 
     steps:
       - name: Checkout repo
@@ -32,16 +35,29 @@ jobs:
       - name: Build EXE
         run: |
           pyinstaller --onefile --noconsole main.py --hidden-import cv2 --hidden-import numpy
-          if "${{ matrix.python-version }}" == "3.7" (
-            rename dist\main.exe passport_extractor_win7.exe
-          ) else (
-            rename dist\main.exe passport_extractor_win10_11.exe
-          )
-          mkdir -p build_output
-          move dist\*.exe build_output\
+          ren dist\main.exe ${{ matrix.exe-name }}
 
-      - name: Upload combined artifacts
+      - name: Upload EXE (per job)
         uses: actions/upload-artifact@v4
         with:
-          name: passport_extractor_all
-          path: build_output\
+          name: exes
+          path: dist/${{ matrix.exe-name }}
+
+  package:
+    runs-on: windows-latest
+    needs: build
+    steps:
+      - name: Download all EXEs
+        uses: actions/download-artifact@v4
+        with:
+          name: exes
+          path: dist
+
+      - name: Create ZIP
+        run: powershell Compress-Archive -Path dist\* -DestinationPath dist\all_exes.zip -Force
+
+      - name: Upload Final ZIP
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows_exes
+          path: dist/all_exes.zip
